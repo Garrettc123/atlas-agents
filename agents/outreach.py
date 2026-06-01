@@ -1,7 +1,3 @@
-"""
-ATLAS Outreach Agent
-TCPA-compliant SMS/email outreach with opt-out enforcement.
-"""
 import re
 from datetime import datetime, time
 from typing import Optional
@@ -91,7 +87,7 @@ class OutreachAgent:
 
     @staticmethod
     def handle_inbound_reply(message: str, lead_id: str, db=None) -> dict:
-        """Process inbound reply — enforce opt-out immediately."""
+        """Process inbound reply - enforce opt-out immediately."""
         if is_opt_out_message(message):
             if db:
                 db.suppress_lead(lead_id)

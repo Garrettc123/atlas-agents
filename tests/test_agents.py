@@ -1,7 +1,3 @@
-"""
-ATLAS Agent Test Suite — TCPA Compliance
-All tests must pass on every deploy. No exceptions.
-"""
 from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
@@ -16,21 +12,21 @@ class TestSendTimeCompliance:
     def test_blocks_early_morning(self):
         with patch("agents.outreach.datetime") as mock_dt:
             mock_now = MagicMock()
-            mock_now.hour = 7  # 7 AM — before window
+            mock_now.hour = 7
             mock_dt.now.return_value = mock_now
             assert is_allowed_send_time() is False
 
     def test_allows_midday(self):
         with patch("agents.outreach.datetime") as mock_dt:
             mock_now = MagicMock()
-            mock_now.hour = 14  # 2 PM
+            mock_now.hour = 14
             mock_dt.now.return_value = mock_now
             assert is_allowed_send_time() is True
 
     def test_blocks_late_night(self):
         with patch("agents.outreach.datetime") as mock_dt:
             mock_now = MagicMock()
-            mock_now.hour = 22  # 10 PM
+            mock_now.hour = 22
             mock_dt.now.return_value = mock_now
             assert is_allowed_send_time() is False
 
@@ -82,4 +78,4 @@ class TestConsentVerification:
             "consent_timestamp": datetime.now() - timedelta(days=10),
         }
         age_days = (datetime.now() - lead["consent_timestamp"]).days
-        assert age_days < 90  # Within inquiry exemption window
+        assert age_days < 90

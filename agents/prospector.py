@@ -1,8 +1,3 @@
-"""
-ATLAS Prospector Agent
-Scrapes and enriches contractor leads — DFW roofing focus.
-"""
-import asyncio
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
@@ -30,28 +25,14 @@ class ProspectorAgent:
         self.processed = 0
         self.name = "Prospector"
 
-    async def run(self, territory: str = "DFW") -> list[Lead]:
-        """Main entrypoint — discover leads in territory."""
-        leads = await self._scrape_permits(territory)
-        enriched = [await self._enrich(lead) for lead in leads]
-        self.processed += len(enriched)
-        return enriched
-
-    async def _scrape_permits(self, territory: str) -> list[Lead]:
-        """Pull recent roofing permits from public records."""
-        await asyncio.sleep(0)  # placeholder for real scraping
-        return []
-
-    async def _enrich(self, lead: Lead) -> Lead:
-        """Score and tier the lead based on signals."""
-        lead.score = self._calculate_score(lead)
-        lead.tier = "hot" if lead.score > 80 else "warm" if lead.score > 60 else "cold"
-        return lead
-
-    def _calculate_score(self, lead: Lead) -> float:
+    def enrich_lead(self, raw: dict) -> dict:
+        """Enrich a raw lead dict with scored fields."""
         score = 50.0
-        if lead.phone:
+        if raw.get("phone"):
             score += 20
-        if lead.email:
+        if raw.get("email"):
             score += 15
-        return min(score, 100.0)
+        score = min(score, 100.0)
+        tier = "hot" if score > 80 else "warm" if score > 60 else "cold"
+        self.processed += 1
+        return {**raw, "score": score, "tier": tier}

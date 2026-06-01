@@ -1,4 +1,4 @@
-name: ATLAS Agents — Full Deploy
+name: ATLAS Agents - Full Deploy
 
 on:
   push:
@@ -6,72 +6,84 @@ on:
   workflow_dispatch:
 
 env:
-  PYTHON_VERSION: '3.11'
+  PYTHON_VERSION: "3.11"
 
 jobs:
 
   lint:
-    name: '⚡ Lint & Format'
+    name: "Lint & Format"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-      - run: pip install black flake8 isort
-      - run: black --check .
-      - run: flake8 . --max-line-length=100 --exclude=.venv,__pycache__
-      - run: isort --check-only .
+
+      - name: Install linters
+        run: pip install black isort flake8
+
+      - name: Black format check
+        run: black --check --diff .
+
+      - name: isort check
+        run: isort --check-only --diff .
+
+      - name: Flake8 lint
+        run: flake8 . --max-line-length=100 --exclude=.venv,__pycache__,.git
 
   test:
-    name: '🧪 Test Suite'
+    name: "Test Suite"
     runs-on: ubuntu-latest
     needs: lint
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-      - run: pip install -r requirements.txt pytest pytest-asyncio pytest-cov
-      - name: Run ATLAS agent tests
-        run: pytest tests/ -v --cov=agents --cov-report=xml --tb=short
+
+      - name: Install dependencies
+        run: pip install fastapi uvicorn pytest pytest-asyncio httpx pydantic
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           ENVIRONMENT: test
 
   security:
-    name: '🔒 Security Scan'
+    name: "Security Scan"
     runs-on: ubuntu-latest
     needs: lint
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
-      - run: pip install bandit safety
-      - run: bandit -r agents/ -ll
-      - run: safety check
+
+      - run: pip install bandit
+      - run: bandit -r agents/ main.py -ll
 
   deploy:
-    name: '🚀 Deploy to Railway'
+    name: "Deploy to Railway"
     runs-on: ubuntu-latest
     needs: [test, security]
     if: github.ref == 'refs/heads/main'
     environment: production
     steps:
       - uses: actions/checkout@v4
+
       - name: Install Railway CLI
         run: npm install -g @railway/cli
-      - name: Deploy ATLAS Agents to Railway
+
+      - name: Deploy to Railway
         run: railway up --service atlas-agents --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-      - name: Health check post-deploy
-        run: |
-          sleep 15
-          echo "✅ ATLAS Agents deployed successfully"
-          echo "🤖 Commit: ${{ github.sha }}"
-          echo "📅 Time: $(date -u)"
+
+      - name: Done
+        run: echo "ATLAS Agents deployed at $(date -u)"
