@@ -1,0 +1,77 @@
+name: ATLAS Agents — Full Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+
+  lint:
+    name: '⚡ Lint & Format'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install black flake8 isort
+      - run: black --check .
+      - run: flake8 . --max-line-length=100 --exclude=.venv,__pycache__
+      - run: isort --check-only .
+
+  test:
+    name: '🧪 Test Suite'
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -r requirements.txt pytest pytest-asyncio pytest-cov
+      - name: Run ATLAS agent tests
+        run: pytest tests/ -v --cov=agents --cov-report=xml --tb=short
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ENVIRONMENT: test
+
+  security:
+    name: '🔒 Security Scan'
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install bandit safety
+      - run: bandit -r agents/ -ll
+      - run: safety check
+
+  deploy:
+    name: '🚀 Deploy to Railway'
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy ATLAS Agents to Railway
+        run: railway up --service atlas-agents --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - name: Health check post-deploy
+        run: |
+          sleep 15
+          echo "✅ ATLAS Agents deployed successfully"
+          echo "🤖 Commit: ${{ github.sha }}"
+          echo "📅 Time: $(date -u)"

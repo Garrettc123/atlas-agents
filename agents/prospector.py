@@ -1,93 +1,57 @@
 """
 ATLAS Prospector Agent
-Role: Lead Identification & Enrichment
-Framework: CrewAI + Claude Sonnet 4
+Scrapes and enriches contractor leads — DFW roofing focus.
 """
+import asyncio
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Optional
 
-from crewai import Agent, Task, Crew
-from langchain_anthropic import ChatAnthropic
-from typing import Dict, List
-import os
-import logging
 
-logger = logging.getLogger(__name__)
+@dataclass
+class Lead:
+    name: str
+    address: str
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    score: float = 0.0
+    tier: str = "cold"
+    created_at: datetime = None
+
+    def __post_init__(self):
+        if self.created_at is None:
+            self.created_at = datetime.utcnow()
 
 
 class ProspectorAgent:
-    """Enriches raw lead data with property context, urgency, and job sizing."""
+    """Autonomous lead discovery and enrichment agent."""
 
     def __init__(self):
-        self.llm = ChatAnthropic(
-            model="claude-sonnet-4-20250514",
-            api_key=os.getenv("ANTHROPIC_API_KEY"),
-            temperature=0.3,
-        )
-        self.agent = Agent(
-            role="Lead Prospector",
-            goal="Identify high-value contractor leads and enrich with actionable context",
-            backstory=(
-                "Expert in DFW contractor markets. You understand emergency roofing patterns, "
-                "seasonal demand, commercial vs residential signals, and geographic nuances "
-                "across Dallas-Fort Worth. Your enrichment data drives accurate qualification."
-            ),
-            llm=self.llm,
-            verbose=False,
-            allow_delegation=False,
-        )
+        self.processed = 0
+        self.name = "Prospector"
 
-    def enrich_lead(self, lead_data: Dict) -> Dict:
-        """
-        Enriches a raw lead with contextual data.
+    async def run(self, territory: str = "DFW") -> list[Lead]:
+        """Main entrypoint — discover leads in territory."""
+        leads = await self._scrape_permits(territory)
+        enriched = [await self._enrich(lead) for lead in leads]
+        self.processed += len(enriched)
+        return enriched
 
-        Args:
-            lead_data: {name, email, phone, address, message, source}
+    async def _scrape_permits(self, territory: str) -> list[Lead]:
+        """Pull recent roofing permits from public records."""
+        await asyncio.sleep(0)  # placeholder for real scraping
+        return []
 
-        Returns:
-            Enriched dict with: property_type, urgency, estimated_job_size,
-            geographic_zone, pain_points, buying_signals, best_contact_time
-        """
-        task = Task(
-            description=f"""Analyze this contractor lead and return enrichment data as JSON:
+    async def _enrich(self, lead: Lead) -> Lead:
+        """Score and tier the lead based on signals."""
+        lead.score = self._calculate_score(lead)
+        lead.tier = "hot" if lead.score > 80 else "warm" if lead.score > 60 else "cold"
+        return lead
 
-            Lead Data:
-            {lead_data}
-
-            Return a JSON object with exactly these keys:
-            - property_type: 'residential' | 'commercial'
-            - urgency: 'emergency' | 'standard' | 'exploratory'
-            - estimated_job_size: 'small' (<$5K) | 'medium' ($5-15K) | 'large' (>$15K)
-            - geographic_zone: DFW sub-region
-            - pain_points: list of specific issues mentioned
-            - buying_signals: list of urgency/budget/timeline indicators
-            - best_contact_time: 'morning' | 'afternoon' | 'evening'
-            """,
-            agent=self.agent,
-            expected_output="JSON object with enrichment fields",
-        )
-
-        crew = Crew(agents=[self.agent], tasks=[task], verbose=False)
-        result = crew.kickoff()
-
-        logger.info(f"Lead enriched: {lead_data.get('name')} — urgency detected")
-        return {**lead_data, "enrichment": str(result)}
-
-    def batch_enrich(self, leads: List[Dict]) -> List[Dict]:
-        """Batch enrich multiple leads."""
-        return [self.enrich_lead(lead) for lead in leads]
-
-
-if __name__ == "__main__":
-    import json
-
-    sample = {
-        "name": "John Martinez",
-        "email": "john@example.com",
-        "phone": "214-555-0123",
-        "address": "1234 Oak St, Dallas TX 75201",
-        "message": "Storm damage last night — water leaking into master bedroom, need help ASAP",
-        "source": "website_form",
-    }
-
-    agent = ProspectorAgent()
-    result = agent.enrich_lead(sample)
-    print(json.dumps(result, indent=2, default=str))
+    def _calculate_score(self, lead: Lead) -> float:
+        score = 50.0
+        if lead.phone:
+            score += 20
+        if lead.email:
+            score += 15
+        return min(score, 100.0)
