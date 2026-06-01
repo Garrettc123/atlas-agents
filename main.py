@@ -2,9 +2,10 @@
 ATLAS Agent API — Garcar Enterprise
 FastAPI entrypoint for all autonomous agents.
 """
+from datetime import datetime
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from datetime import datetime
 
 app = FastAPI(
     title="ATLAS Agent API",
@@ -28,9 +29,14 @@ async def health():
         "company": "Garcar Enterprise",
         "timestamp": datetime.utcnow().isoformat(),
         "agents": [
-            "prospector", "qualifier", "outreach",
-            "conversation", "scheduler", "revenue", "analytics"
-        ]
+            "prospector",
+            "qualifier",
+            "outreach",
+            "conversation",
+            "scheduler",
+            "revenue",
+            "analytics",
+        ],
     }
 
 
@@ -47,3 +53,12 @@ async def agent_status():
 async def intake_lead(payload: dict):
     """Receive a new lead and route through ATLAS pipeline."""
     return {"status": "queued", "lead_id": "atlas-" + str(hash(str(payload)))[-8:]}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    print("=" * 60)
+    print("ATLAS Agent API — Starting")
+    print("=" * 60)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
