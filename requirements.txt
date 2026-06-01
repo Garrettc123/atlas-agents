@@ -1,0 +1,12 @@
+crewai==0.28.0
+crewai-tools==0.2.6
+langchain==0.1.16
+langchain-anthropic==0.1.11
+anthropic==0.25.1
+pydantic==2.7.0
+python-dotenv==1.0.0
+pytz==2024.1
+pytest==8.2.0
+pytest-cov==5.0.0
+black==24.4.2
+flake8==7.0.0
