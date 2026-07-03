@@ -85,5 +85,5 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      - name: Done
-        run: echo "ATLAS Agents deployed at $(date -u)"
+      - name: Deployment Success
+        run: echo "✅ ATLAS Agents deployed successfully at $(date -u)"
