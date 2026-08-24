@@ -50,9 +50,7 @@ class TestOptOutDetection:
 
     def test_opt_out_triggers_suppression(self):
         mock_db = MagicMock()
-        result = OutreachAgent.handle_inbound_reply(
-            message="STOP", lead_id="lead_001", db=mock_db
-        )
+        result = OutreachAgent.handle_inbound_reply(message="STOP", lead_id="lead_001", db=mock_db)
         mock_db.suppress_lead.assert_called_once_with("lead_001")
         assert result["action"] == "opted_out"
 
