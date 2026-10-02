@@ -1,5 +1,6 @@
 class ConversationAgent:
     """Dialogue management and objection handling."""
+
     def __init__(self):
         self.processed = 0
         self.name = "Conversation"
