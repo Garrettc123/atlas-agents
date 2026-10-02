@@ -1,5 +1,6 @@
 class RevenueAgent:
     """Quote generation and Stripe payment link."""
+
     def __init__(self):
         self.processed = 0
         self.name = "Revenue"
