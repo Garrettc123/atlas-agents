@@ -1,5 +1,6 @@
 class AnalyticsAgent:
     """Performance tracking and reporting."""
+
     def __init__(self):
         self.processed = 0
         self.name = "Analytics"
