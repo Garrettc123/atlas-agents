@@ -1,5 +1,6 @@
 class SchedulerAgent:
     """Appointment booking agent."""
+
     def __init__(self):
         self.processed = 0
         self.name = "Scheduler"
