@@ -8,7 +8,7 @@ class AnalyticsAgent:
     def report(self, pipeline: list) -> dict:
         self.processed += 1
         total = len(pipeline)
-        converted = sum(1 for l in pipeline if l.get("paid"))
+        converted = sum(1 for lead in pipeline if lead.get("paid"))
         return {
             "total_leads": total,
             "converted": converted,
