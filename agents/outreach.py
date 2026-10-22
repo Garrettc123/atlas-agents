@@ -1,3 +1,5 @@
+import asyncio
+import os
 import re
 from datetime import datetime, time
 from typing import Optional
@@ -60,8 +62,22 @@ class OutreachAgent:
             return {"status": "blocked", "reason": "opted_out"}
         if not self.is_send_window():
             return {"status": "queued", "reason": "outside_send_window"}
+        account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+        auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
+        from_number = os.environ.get("TWILIO_PHONE_NUMBER")
+        if not (account_sid and auth_token and from_number):
+            return {"status": "simulated", "phone": phone}
+        try:
+            from twilio.rest import Client
+
+            client = Client(account_sid, auth_token)
+            result = await asyncio.to_thread(
+                client.messages.create, to=phone, from_=from_number, body=message
+            )
+        except Exception as exc:  # noqa: BLE001
+            return {"status": "error", "reason": str(exc)}
         self.processed += 1
-        return {"status": "sent", "phone": phone}
+        return {"status": "sent", "phone": phone, "sid": result.sid}
 
     def generate_outreach(
         self,
