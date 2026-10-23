@@ -1,7 +1,8 @@
 """TCPA compliance tests — must pass on every deploy."""
+
 import pytest
 from agents.outreach import OutreachAgent
-from datetime import datetime, time
+from datetime import datetime
 
 
 @pytest.fixture
@@ -19,6 +20,7 @@ def test_opt_out_detection(agent):
 def test_opt_out_blocks_send(agent):
     agent.opt_out_list.add("2145550001")
     import asyncio
+
     result = asyncio.run(agent.send("+12145550001", "Hello!"))
     assert result["status"] == "blocked"
     assert result["reason"] == "opted_out"
@@ -31,7 +33,7 @@ def test_handle_reply_adds_to_opt_out(agent):
 
 
 def test_send_window_enforcement(agent):
-    in_window = datetime(2026, 6, 1, 10, 0)   # 10 AM
+    in_window = datetime(2026, 6, 1, 10, 0)  # 10 AM
     out_window = datetime(2026, 6, 1, 22, 0)  # 10 PM
     assert agent.is_send_window(in_window) is True
     assert agent.is_send_window(out_window) is False
