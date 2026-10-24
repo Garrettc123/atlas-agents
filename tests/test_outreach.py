@@ -1,8 +1,10 @@
 """TCPA compliance tests — must pass on every deploy."""
 
-import pytest
-from agents.outreach import OutreachAgent
 from datetime import datetime
+
+import pytest
+
+from agents.outreach import OutreachAgent
 
 
 @pytest.fixture
