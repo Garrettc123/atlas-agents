@@ -26,8 +26,16 @@ def is_opt_out_message(message: str) -> bool:
 
 def is_allowed_send_time(timezone_str: str = "America/Chicago") -> bool:
     """Check if current time is within TCPA-compliant send window."""
-    now = datetime.now().time()
-    return SEND_WINDOW_START <= now <= SEND_WINDOW_END
+    hour = datetime.now().hour
+    return SEND_WINDOW_START.hour <= hour < SEND_WINDOW_END.hour
+
+
+def normalize_phone(phone: str) -> str:
+    """Digits only, with a leading US country code 1 dropped (10-digit form)."""
+    digits = re.sub(r"\D", "", phone)
+    if len(digits) == 11 and digits.startswith("1"):
+        digits = digits[1:]
+    return digits
 
 
 class OutreachAgent:
@@ -39,8 +47,7 @@ class OutreachAgent:
         self.name = "Outreach"
 
     def is_opted_out(self, phone: str) -> bool:
-        normalized = re.sub(r"\D", "", phone)
-        return normalized in self.opt_out_list
+        return normalize_phone(phone) in self.opt_out_list
 
     def is_send_window(self, local_time: Optional[datetime] = None) -> bool:
         now = (local_time or datetime.now()).time()
@@ -52,8 +59,7 @@ class OutreachAgent:
 
     def handle_reply(self, phone: str, message: str) -> str:
         if self.detect_opt_out(message):
-            normalized = re.sub(r"\D", "", phone)
-            self.opt_out_list.add(normalized)
+            self.opt_out_list.add(normalize_phone(phone))
             return "opted_out"
         return "active"
 
